@@ -9,10 +9,15 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Stream:
-    container: InputContainer | None
-    audio_queue: Queue[bytes | None]
+    running: bool = False
+    container: InputContainer = None
+    audio_queue: Queue[bytes] = None
 
-    def open(self, url: str):
+    def open(self, url: str) -> bool:
+        if self.container:
+            _LOGGER.error("can't reopen active stream")
+            return False
+
         options = {"fflags": "nobuffer", "flags": "low_delay", "timeout": "5000000"}
 
         if url.startswith("rtsp"):
@@ -21,8 +26,14 @@ class Stream:
 
         _LOGGER.debug(f"open: {url}")
 
-        self.container = av.open(url, options=options, timeout=5)
-        self.audio_queue = Queue()
+        try:
+            self.container = av.open(url, options=options, timeout=5)
+            self.audio_queue = Queue()
+            return True
+        except Exception as e:
+            _LOGGER.error("open", exc_info=e)
+            self.container = None
+            return False
 
     def run(self):
         _LOGGER.debug(f"run")
@@ -31,25 +42,19 @@ class Stream:
         resampler = AudioResampler(format="s16", layout="mono", rate=16000)
 
         try:
-            for frame in self.container.decode(audio=0):
+            self.running = True
+            while self.running:
+                frame = next(self.container.decode(audio=0))
                 for new_frame in resampler.resample(frame):
                     self.audio_queue.put_nowait(new_frame.to_ndarray().tobytes())
         except Exception as e:
-            if not isinstance(e, OSError) or e.errno != 10038:
-                _LOGGER.error("run", exc_info=e)
-        finally:
-            self.close()
-
-    def close(self):
-        if not self.container:
-            return
-
-        _LOGGER.debug(f"close")
-
-        try:
-            self.container.close()
-            self.container = None
-        except Exception as e:
-            _LOGGER.error("close", exc_info=e)
+            _LOGGER.error("run", exc_info=e)
         finally:
             self.audio_queue.put_nowait(None)
+            self.container.close()
+            self.container = None
+
+    def close(self):
+        _LOGGER.debug(f"close")
+
+        self.running = False

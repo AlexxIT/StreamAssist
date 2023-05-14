@@ -62,11 +62,10 @@ class StreamAssistSwitch(SwitchEntity, Stream):
             _LOGGER.error("Can't get stream url")
             return
 
-        try:
-            # 2. Check if stream OK
-            await self.hass.loop.run_in_executor(None, self.open, url)
-        except Exception as e:
-            _LOGGER.error(f"open {url}", exc_info=e)
+        # 2. Check if stream OK
+        ok = await self.hass.loop.run_in_executor(None, self.open, url)
+        if not ok:
+            return
 
         # 3. Change state
         self._attr_is_on = True
