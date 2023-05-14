@@ -1,0 +1,35 @@
+{
+  "config": {
+    "error": {
+    },
+    "step": {
+      "user": {
+        "data": {
+          "name": "Name",
+          "mic_entity_id": "Camera entity_id",
+          "mic_stream_url": "Stream URL (RTSP/RTMP/HTTP)"
+        },
+        "description": "Select camera `entity_id` or stream `stream_url`"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "mic_entity_id": "MIC camera entity_id",
+          "mic_stream_url": "MIC stream URL (RTSP/RTMP/HTTP)",
+          "vad_mode": "VAD mode (3 - most aggressive filtering out non-speech)",
+          "vad_speech_seconds": "VAD speech seconds (minumum speech duration)",
+          "vad_silence_seconds": "VAD silence seconds (maximum silence after speech)",
+          "vad_timeout_seconds": "VAD timeout seconds (maximum analyze duration)",
+          "vad_reset_seconds": "VAD reset seconds (gaps between speech and silience)",
+          "snd_entity_id": "SND media_player entity_id",
+          "pipeline_id": "Pipeline (Settings > Voice Assistant)",
+          "pipeline_end_stage": "Pipeline end stage"
+        },
+        "description": "Select only one MIC - `entity_id` or direct `url` to stream"
+      }
+    }
+  }
+}
