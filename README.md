@@ -13,7 +13,8 @@ Assist pipeline can use:
 
 - [Whisper](https://github.com/home-assistant/addons) core Add-on for local STT
 - [Pipper](https://github.com/home-assistant/addons) core Add-on for local TTS
-- [Google Translate](https://www.home-assistant.io/integrations/google_translate/) integration for cloud TTS
+- [Faster Whisper](https://github.com/AlexxIT/FasterWhisper) custom integration for local STT
+- [Google Translate](https://www.home-assistant.io/integrations/google_translate/) core integration for cloud TTS
 
 **Important.** Component does not support **wake** word. The recognition process must be started manually or by automation (remote button, motion sensor, etc).
 
@@ -50,7 +51,6 @@ Or manually copy `stream_assist` folder from [latest release](https://github.com
 ```yaml
 tts:
   - platform: google_translate
-    language: en
 ```
 
 ### Config local Voice assistant (NLP)
@@ -102,3 +102,5 @@ You can also view the pipelines running history in the Home Assistant interface:
    - Second server: Settings > Integrations > Add integration > Wyoming Protocol > Select: first server IP, add-on port
 
 3. Whisper supports many languages, but Piper much less. You can use Google Translate integration instead of Piper, which support many languages for TTS.
+
+4. If your environment does not allow you to install add-ons, you can install [Faster Whisper](https://github.com/AlexxIT/FasterWhisper) custom integration for local STT
