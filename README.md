@@ -12,7 +12,7 @@ Component will use:
 Assist pipeline can use:
 
 - [Whisper](https://github.com/home-assistant/addons) core Add-on for local STT
-- [Pipper](https://github.com/home-assistant/addons) core Add-on for local TTS
+- [Piper](https://github.com/home-assistant/addons) core Add-on for local TTS
 - [Faster Whisper](https://github.com/AlexxIT/FasterWhisper) custom integration for local STT
 - [Google Translate](https://www.home-assistant.io/integrations/google_translate/) core integration for cloud TTS
 
