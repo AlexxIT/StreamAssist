@@ -1,13 +1,40 @@
+import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceResponse, SupportsResponse
 from homeassistant.helpers.device_registry import DeviceEntry
-from homeassistant.helpers.typing import ConfigType
+from homeassistant.helpers.typing import ConfigType, ServiceCallType
+
+from .core import DOMAIN, get_stream_source, assist_run, stream_run
+from .core.stream import Stream
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = (Platform.SENSOR, Platform.SWITCH)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType):
+    async def run(call: ServiceCallType) -> ServiceResponse:
+        stt_stream = Stream()
+
+        try:
+            coro = stream_run(hass, call.data, stt_stream=stt_stream)
+            hass.async_create_task(coro)
+
+            return await assist_run(
+                hass, call.data, context=call.context, stt_stream=stt_stream
+            )
+        except Exception as e:
+            _LOGGER.error("stream_assist.run", exc_info=e)
+            return {"error": {"type": str(type(e)), "message": str(e)}}
+        finally:
+            stt_stream.close()
+
+    hass.services.async_register(
+        DOMAIN, "run", run, supports_response=SupportsResponse.OPTIONAL
+    )
+
     return True
 
 

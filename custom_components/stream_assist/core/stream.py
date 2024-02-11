@@ -1,60 +1,79 @@
+import asyncio
 import logging
-from asyncio import Queue
 
 import av
 from av.audio.resampler import AudioResampler
-from av.container import InputContainer
+from av.container.input import InputContainer
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class Stream:
-    running: bool = False
-    container: InputContainer = None
-    audio_queue: Queue[bytes] = None
+    def __init__(self):
+        self.closed: bool = False
+        self.container: InputContainer | None = None
+        self.enabled: bool = False
+        self.queue: asyncio.Queue[bytes] = asyncio.Queue()
 
-    def open(self, url: str) -> bool:
-        if self.container:
-            _LOGGER.error("can't reopen active stream")
-            return False
+    def open(self, file: str, **kwargs):
+        _LOGGER.debug(f"stream open")
 
-        options = {"fflags": "nobuffer", "flags": "low_delay", "timeout": "5000000"}
+        if "options" not in kwargs:
+            kwargs["options"] = {
+                "fflags": "nobuffer",
+                "flags": "low_delay",
+                "timeout": "5000000",
+            }
 
-        if url.startswith("rtsp"):
-            options["rtsp_flags"] = "prefer_tcp"
-            options["allowed_media_types"] = "audio"
+            if file.startswith("rtsp"):
+                kwargs["options"]["rtsp_flags"] = "prefer_tcp"
+                kwargs["options"]["allowed_media_types"] = "audio"
 
-        _LOGGER.debug(f"open: {url}")
+        kwargs.setdefault("timeout", 5)
 
-        try:
-            self.container = av.open(url, options=options, timeout=5)
-            self.audio_queue = Queue()
-            return True
-        except Exception as e:
-            _LOGGER.error("open", exc_info=e)
-            self.container = None
-            return False
+        # https://pyav.org/docs/9.0.2/api/_globals.html
+        self.container = av.open(file, **kwargs)
 
-    def run(self):
-        _LOGGER.debug(f"run")
+    def run(self, end=True):
+        _LOGGER.debug("stream start")
 
-        # TODO: support other formats
         resampler = AudioResampler(format="s16", layout="mono", rate=16000)
 
         try:
-            self.running = True
-            while self.running:
-                frame = next(self.container.decode(audio=0))
-                for new_frame in resampler.resample(frame):
-                    self.audio_queue.put_nowait(new_frame.to_ndarray().tobytes())
+            for frame in self.container.decode(audio=0):
+                if self.closed:
+                    return
+                if not self.enabled:
+                    continue
+                for frame_raw in resampler.resample(frame):
+                    chunk = frame_raw.to_ndarray().tobytes()
+                    self.queue.put_nowait(chunk)
         except Exception as e:
-            _LOGGER.error("run", exc_info=e)
+            _LOGGER.debug(f"stream exception {type(e)}: {e}")
         finally:
-            self.audio_queue.put_nowait(None)
             self.container.close()
             self.container = None
 
-    def close(self):
-        _LOGGER.debug(f"close")
+        if end and self.enabled:
+            self.queue.put_nowait(b"")
 
-        self.running = False
+        _LOGGER.debug("stream end")
+
+    def close(self):
+        _LOGGER.debug(f"stream close")
+        self.closed = True
+
+    def start(self):
+        while self.queue.qsize():
+            self.queue.get_nowait()
+
+        self.enabled = True
+
+    def stop(self):
+        self.enabled = False
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self) -> bytes:
+        return await self.queue.get()

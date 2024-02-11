@@ -1,0 +1,54 @@
+# https://developers.home-assistant.io/docs/dev_101_services
+# https://www.home-assistant.io/docs/blueprint/selectors/
+run:
+  name: Run
+  description:
+  fields:
+    stream_source:
+      name: Stream URL
+      description: Link to stream (any type, supported by FFmpeg)
+      example: rtsp://rtsp:12345678@192.168.1.123:554/av_stream/ch0
+      selector:
+        text:
+
+    camera_entity_id:
+      name: Camera Entity
+      description: Entity for STT source
+      selector:
+        entity:
+          domain: camera
+          supported_features:
+            - camera.CameraEntityFeature.STREAM
+
+    player_entity_id:
+      name: Player Entity
+      description: Entity for playing TTS
+      selector:
+        entity:
+          domain: media_player
+          supported_features:
+            - media_player.MediaPlayerEntityFeature.PLAY_MEDIA
+
+    stt_start_media:
+      name: STT start media
+      description: Link to the media for playing on STT start
+      selector:
+        text:
+
+    pipeline_id:
+      name: Pipeline
+      description: Settings > Voice Assistant
+      selector:
+        assist_pipeline:
+
+    assist:
+      name: Assist
+      description: Advanced parameters
+      selector:
+        object:
+
+    stream:
+      name: Stream
+      description: Advanced parameters
+      selector:
+        object:

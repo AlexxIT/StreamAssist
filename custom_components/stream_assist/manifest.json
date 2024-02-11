@@ -1,17 +1,17 @@
 {
   "domain": "stream_assist",
   "name": "Stream Assist",
-  "config_flow": true,
-  "documentation": "https://github.com/AlexxIT/StreamAssist",
-  "issue_tracker": "https://github.com/AlexxIT/StreamAssist/issues",
   "codeowners": [
     "@AlexxIT"
   ],
+  "config_flow": true,
   "dependencies": [
     "stream",
     "assist_pipeline"
   ],
+  "documentation": "https://github.com/AlexxIT/StreamAssist",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/AlexxIT/StreamAssist/issues",
   "requirements": [],
-  "version": "v1.0.0",
-  "iot_class": "calculated"
+  "version": "v1.0.0"
 }

@@ -1,12 +1,13 @@
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.components import assist_pipeline
-from homeassistant.components.assist_pipeline.vad import VoiceCommandSegmenter as VAD
+from homeassistant.components.camera import CameraEntityFeature
+from homeassistant.components.media_player import MediaPlayerEntityFeature
 from homeassistant.config_entries import ConfigFlow, ConfigEntry, OptionsFlow
 from homeassistant.core import callback
 from homeassistant.helpers import entity_registry
 
-from .core import DOMAIN, STAGES
+from .core import DOMAIN
 
 
 class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
@@ -16,15 +17,20 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(title=title, data=user_input)
 
         reg = entity_registry.async_get(self.hass)
-        cameras = [k for k, v in reg.entities.items() if v.domain == "camera"]
+        cameras = [
+            k
+            for k, v in reg.entities.items()
+            if v.domain == "camera"
+            and v.supported_features & CameraEntityFeature.STREAM
+        ]
 
         return self.async_show_form(
             step_id="user",
-            data_schema=schema(
+            data_schema=vol_schema(
                 {
                     vol.Required("name"): str,
-                    vol.Exclusive("mic_entity_id", "url"): vol.In(cameras),
-                    vol.Exclusive("mic_stream_url", "url"): str,
+                    vol.Exclusive("stream_source", "url"): str,
+                    vol.Exclusive("camera_entity_id", "url"): vol.In(cameras),
                 },
                 user_input,
             ),
@@ -40,51 +46,59 @@ class OptionsFlowHandler(OptionsFlow):
     def __init__(self, config_entry: ConfigEntry):
         self.config_entry = config_entry
 
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(self, user_input: dict = None):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
         reg = entity_registry.async_get(self.hass)
-        cameras = [k for k, v in reg.entities.items() if v.domain == "camera"]
-        players = [k for k, v in reg.entities.items() if v.domain == "media_player"]
+        cameras = [
+            k
+            for k, v in reg.entities.items()
+            if v.domain == "camera"
+            and v.supported_features & CameraEntityFeature.STREAM
+        ]
+        players = [
+            k
+            for k, v in reg.entities.items()
+            if v.domain == "media_player"
+            and v.supported_features & MediaPlayerEntityFeature.PLAY_MEDIA
+        ]
 
         pipelines = {
             p.id: p.name for p in assist_pipeline.async_get_pipelines(self.hass)
         }
 
-        stages = {p: p.upper() for p in STAGES}
-
         defaults = self.config_entry.options.copy()
-        defaults.setdefault("vad_mode", VAD.vad_mode)
-        defaults.setdefault("vad_speech_seconds", VAD.speech_seconds)
-        defaults.setdefault("vad_silence_seconds", VAD.silence_seconds)
-        defaults.setdefault("vad_timeout_seconds", VAD.timeout_seconds)
-        defaults.setdefault("vad_reset_seconds", VAD.reset_seconds)
-        defaults.setdefault("pipeline_end_stage", "vad")
 
         return self.async_show_form(
             step_id="init",
-            data_schema=schema(
+            data_schema=vol_schema(
                 {
-                    vol.Exclusive("mic_entity_id", "url"): vol.In(cameras),
-                    vol.Exclusive("mic_stream_url", "url"): str,
-                    vol.Optional("vad_mode"): vol.In([0, 1, 2, 3]),
-                    vol.Optional("vad_speech_seconds"): cv.positive_float,
-                    vol.Optional("vad_silence_seconds"): cv.positive_float,
-                    vol.Optional("vad_timeout_seconds"): cv.positive_float,
-                    vol.Optional("vad_reset_seconds"): cv.positive_float,
-                    vol.Optional("snd_entity_id"): cv.multi_select(players),
+                    vol.Exclusive("stream_source", "url"): str,
+                    vol.Exclusive("camera_entity_id", "url"): vol.In(cameras),
+                    vol.Optional("player_entity_id"): cv.multi_select(players),
+                    vol.Optional("stt_start_media"): str,
                     vol.Optional("pipeline_id"): vol.In(pipelines),
-                    vol.Required("pipeline_end_stage"): vol.In(stages),
                 },
                 defaults,
             ),
         )
 
 
-def schema(schema: dict, defaults: dict) -> vol.Schema:
+def vol_schema(schema: dict, defaults: dict) -> vol.Schema:
+    schema = {k: v for k, v in schema.items() if not empty(v)}
+
     if defaults:
         for key in schema:
             if key.schema in defaults:
                 key.default = vol.default_factory(defaults[key.schema])
+
     return vol.Schema(schema)
+
+
+def empty(v) -> bool:
+    if isinstance(v, vol.In):
+        return len(v.container) == 0
+    if isinstance(v, cv.multi_select):
+        return len(v.options) == 0
+    return False
