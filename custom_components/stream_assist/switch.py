@@ -69,3 +69,7 @@ class StreamAssistSwitch(SwitchEntity):
         self._async_write_ha_state()
 
         self.on_close()
+
+    async def async_will_remove_from_hass(self) -> None:
+        if self._attr_is_on:
+            self.on_close()
