@@ -134,9 +134,6 @@ async def assist_run(
         if event_callback:
             event_callback(event)
 
-    wake_word_settings = assist.get("wake_word_settings", {})
-    audio_settings = assist.get("audio_settings", {})
-
     pipeline_run = PipelineRun(
         hass,
         context=context,
@@ -145,15 +142,8 @@ async def assist_run(
         end_stage=assist["end_stage"],  # wake_word, stt, intent, tts
         event_callback=internal_event_callback,
         tts_audio_output=assist.get("tts_audio_output"),  # None, wav, mp3
-        wake_word_settings=WakeWordSettings(
-            timeout=wake_word_settings.get("timeout", 5)
-        ),
-        audio_settings=AudioSettings(
-            noise_suppression_level=audio_settings.get("noise_suppression_level", 0),
-            auto_gain_dbfs=audio_settings.get("auto_gain_dbfs", 0),
-            volume_multiplier=audio_settings.get("volume_multiplier", 1.0),
-            is_vad_enabled=audio_settings.get("is_vad_enabled", True),
-        ),
+        wake_word_settings=new(WakeWordSettings, assist.get("wake_word_settings")),
+        audio_settings=new(AudioSettings, assist.get("audio_settings")),
     )
 
     # 3. Setup Pipeline Input
@@ -239,3 +229,10 @@ def run_forever(
     hass.async_create_background_task(run_assist(), "stream_assist_run_assist")
 
     return stt_stream.close
+
+
+def new(cls, kwargs: dict):
+    if not kwargs:
+        return cls()
+    kwargs = {k: v for k, v in kwargs.items() if hasattr(cls, k)}
+    return cls(**kwargs)
