@@ -16,6 +16,10 @@ Assist pipeline can use:
 - [Faster Whisper](https://github.com/AlexxIT/FasterWhisper) custom integration for local STT
 - [Google Translate](https://www.home-assistant.io/integrations/google_translate/) core integration for cloud TTS
 
+**Video instruction from fixtSE**
+
+[![Local Voice Assistant: Using your Cameras & Speakers in HA](https://img.youtube.com/vi/fP_BNFWLYnk/mqdefault.jpg)](https://www.youtube.com/watch?v=fP_BNFWLYnk)
+
 ## Installation
 
 [HACS](https://hacs.xyz/) > Integrations > 3 dots (upper top corner) > Custom repositories > URL: `AlexxIT/StreamAssist`, Category: Integration > Add > wait > Stream Assist > Install
