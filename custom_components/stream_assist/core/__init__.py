@@ -129,7 +129,7 @@ async def assist_run(
         elif event.type == PipelineEventType.TTS_END:
             if player_entity_id:
                 tts = event.data["tts_output"]
-                play_media(hass, player_entity_id, tts["url"], tts["mime_type"])
+                play_media(hass, player_entity_id, tts["media_id"], tts["mime_type"])
 
         if event_callback:
             event_callback(event)
