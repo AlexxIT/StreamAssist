@@ -27,7 +27,6 @@ class Stream:
 
             if file.startswith("rtsp"):
                 kwargs["options"]["rtsp_flags"] = "prefer_tcp"
-                kwargs["options"]["allowed_media_types"] = "audio"
 
         kwargs.setdefault("timeout", 5)
 
