@@ -52,3 +52,9 @@ run:
       description: Advanced parameters
       selector:
         object:
+
+    allow_all_mediatypes:
+      name: Allow all media types
+      description: Activate if RTSP camera doesn't support filtering media types
+      selector:
+        boolean:

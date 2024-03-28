@@ -15,9 +15,7 @@ class Stream:
         self.enabled: bool = False
         self.queue: asyncio.Queue[bytes] = asyncio.Queue()
 
-    def open(self, file: str, **kwargs):
-        _LOGGER.debug(f"stream open")
-
+    def open(self, file: str, allow_all_mediatypes: bool, **kwargs):
         if "options" not in kwargs:
             kwargs["options"] = {
                 "fflags": "nobuffer",
@@ -27,14 +25,21 @@ class Stream:
 
             if file.startswith("rtsp"):
                 kwargs["options"]["rtsp_flags"] = "prefer_tcp"
+                if not allow_all_mediatypes:
+                    kwargs["options"]["allowed_media_types"] = "audio"
 
         kwargs.setdefault("timeout", 5)
+        _LOGGER.debug("Starting stream with kwargs: %s", kwargs)
 
-        # https://pyav.org/docs/9.0.2/api/_globals.html
-        self.container = av.open(file, **kwargs)
+        try:
+            # https://pyav.org/docs/9.0.2/api/_globals.html
+            self.container = av.open(file, **kwargs)
+            _LOGGER.info("Stream started")
+        except Exception as e:
+            _LOGGER.error("Can't open stream: %s", e)
 
     def run(self, end=True):
-        _LOGGER.debug("stream start")
+        _LOGGER.info("stream start")
 
         resampler = AudioResampler(format="s16", layout="mono", rate=16000)
 
@@ -48,7 +53,7 @@ class Stream:
                     chunk = frame_raw.to_ndarray().tobytes()
                     self.queue.put_nowait(chunk)
         except Exception as e:
-            _LOGGER.debug(f"stream exception {type(e)}: {e}")
+            _LOGGER.error(f"stream exception {type(e)}: {e}")
         finally:
             self.container.close()
             self.container = None
@@ -56,10 +61,10 @@ class Stream:
         if end and self.enabled:
             self.queue.put_nowait(b"")
 
-        _LOGGER.debug("stream end")
+        _LOGGER.info("stream end")
 
     def close(self):
-        _LOGGER.debug(f"stream close")
+        _LOGGER.info(f"stream close")
         self.closed = True
 
     def start(self):

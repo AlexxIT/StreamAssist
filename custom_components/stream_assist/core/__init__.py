@@ -67,6 +67,8 @@ async def stream_run(hass: HomeAssistant, data: dict, stt_stream: Stream) -> Non
             stream_kwargs["file"] = await get_stream_source(hass, entity)
         else:
             return
+    if "allow_all_mediatypes" not in stream_kwargs:
+        stream_kwargs["allow_all_mediatypes"] = data.get("allow_all_mediatypes", False)
 
     stt_stream.open(**stream_kwargs)
 
