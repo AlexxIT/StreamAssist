@@ -79,6 +79,7 @@ class OptionsFlowHandler(OptionsFlow):
                     vol.Optional("player_entity_id"): cv.multi_select(players),
                     vol.Optional("stt_start_media"): str,
                     vol.Optional("pipeline_id"): vol.In(pipelines),
+                    vol.Optional("allow_all_mediatypes"): bool,
                 },
                 defaults,
             ),
