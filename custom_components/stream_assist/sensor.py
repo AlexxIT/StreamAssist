@@ -44,4 +44,4 @@ class StreamAssistSensor(SensorEntity):
     def signal(self, value: str, extra: dict = None):
         self._attr_native_value = value or STATE_IDLE
         self._attr_extra_state_attributes = extra
-        self.async_write_ha_state()
+        self.schedule_update_ha_state()
