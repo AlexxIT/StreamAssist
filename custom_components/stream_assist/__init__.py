@@ -2,9 +2,9 @@ import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant, ServiceResponse, SupportsResponse
+from homeassistant.core import HomeAssistant, ServiceResponse, SupportsResponse, ServiceCall
 from homeassistant.helpers.device_registry import DeviceEntry
-from homeassistant.helpers.typing import ConfigType, ServiceCallType
+from homeassistant.helpers.typing import ConfigType
 
 from .core import DOMAIN, get_stream_source, assist_run, stream_run
 from .core.stream import Stream
@@ -15,7 +15,7 @@ PLATFORMS = (Platform.SENSOR, Platform.SWITCH)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType):
-    async def run(call: ServiceCallType) -> ServiceResponse:
+    async def run(call: ServiceCall) -> ServiceResponse:
         stt_stream = Stream()
 
         try:
