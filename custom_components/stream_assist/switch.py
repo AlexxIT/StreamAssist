@@ -7,6 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers import template
 
 from .core import run_forever, init_entity, EVENTS
 
@@ -28,7 +29,7 @@ class StreamAssistSwitch(SwitchEntity):
         self._attr_is_on = False
         self._attr_should_poll = False
 
-        self.options = config_entry.options
+        self.options = config_entry.options.copy()
         self.uid = init_entity(self, "mic", config_entry)
 
     def event_callback(self, event: PipelineEvent):
@@ -54,9 +55,15 @@ class StreamAssistSwitch(SwitchEntity):
         for event in EVENTS:
             async_dispatcher_send(self.hass, f"{self.uid}-{event}", None)
 
+        assist = self.options.get("assist", {})
+        if assist.get("device_id") is None:
+            dev_name = self.device_info.get("name")
+            assist["device_id"] = template.device_id(self.hass, dev_name)
+            self.options["assist"] = assist
+
         self.on_close = run_forever(
             self.hass,
-            self.options.copy(),
+            self.options,
             context=self._context,
             event_callback=self.event_callback,
         )
