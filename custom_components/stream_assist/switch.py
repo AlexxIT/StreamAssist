@@ -28,7 +28,7 @@ class StreamAssistSwitch(SwitchEntity):
         self._attr_is_on = False
         self._attr_should_poll = False
 
-        self.options = config_entry.options
+        self.options = config_entry.options.copy()
         self.uid = init_entity(self, "mic", config_entry)
 
     def event_callback(self, event: PipelineEvent):
@@ -44,6 +44,9 @@ class StreamAssistSwitch(SwitchEntity):
 
         async_dispatcher_send(self.hass, f"{self.uid}-{name}", state, event.data)
 
+    async def async_added_to_hass(self) -> None:
+        self.options["assist"] = {"device_id": self.device_entry.id}
+
     async def async_turn_on(self) -> None:
         if self._attr_is_on:
             return
@@ -56,7 +59,7 @@ class StreamAssistSwitch(SwitchEntity):
 
         self.on_close = run_forever(
             self.hass,
-            self.options.copy(),
+            self.options,
             context=self._context,
             event_callback=self.event_callback,
         )
