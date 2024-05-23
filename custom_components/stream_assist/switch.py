@@ -7,7 +7,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers import template
 
 from .core import run_forever, init_entity, EVENTS
 
@@ -45,6 +44,9 @@ class StreamAssistSwitch(SwitchEntity):
 
         async_dispatcher_send(self.hass, f"{self.uid}-{name}", state, event.data)
 
+    async def async_added_to_hass(self) -> None:
+        self.options["assist"] = {"device_id": self.device_entry.id}
+
     async def async_turn_on(self) -> None:
         if self._attr_is_on:
             return
@@ -54,12 +56,6 @@ class StreamAssistSwitch(SwitchEntity):
 
         for event in EVENTS:
             async_dispatcher_send(self.hass, f"{self.uid}-{event}", None)
-
-        assist = self.options.get("assist", {})
-        if assist.get("device_id") is None:
-            dev_name = self.device_info.get("name")
-            assist["device_id"] = template.device_id(self.hass, dev_name)
-            self.options["assist"] = assist
 
         self.on_close = run_forever(
             self.hass,
