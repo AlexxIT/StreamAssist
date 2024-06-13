@@ -21,7 +21,8 @@
           "camera_entity_id": "Camera Entity",
           "player_entity_id": "Player Entity",
           "stt_start_media": "STT start media",
-          "pipeline_id": "Pipeline (Settings > Voice Assistant)"
+          "pipeline_id": "Pipeline (Settings > Voice Assistant)",
+          "allow_all_mediatypes": "Allow all Media Types"
         }
       }
     }
