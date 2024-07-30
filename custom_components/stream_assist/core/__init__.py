@@ -189,6 +189,7 @@ def play_media(hass: HomeAssistant, entity_id: str, media_id: str, media_type: s
         "entity_id": entity_id,
         "media_content_id": media_player.async_process_play_media_url(hass, media_id),
         "media_content_type": media_type,
+        "announce": True,  # Add this line to enable announce mode
     }
 
     # hass.services.call will block Hass
