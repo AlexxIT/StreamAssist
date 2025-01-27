@@ -22,7 +22,7 @@ from homeassistant.core import HomeAssistant, Context
 from homeassistant.helpers.device_registry import DeviceEntryType
 from homeassistant.helpers.entity import Entity, DeviceInfo
 from homeassistant.helpers.entity_component import EntityComponent
-
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from .stream import Stream
 
 _LOGGER = logging.getLogger(__name__)
@@ -122,7 +122,7 @@ async def assist_run(
             if event.data
             else {"timestamp": event.timestamp}
         )
-
+        async_dispatcher_send(hass, "simple_state_pipeline_event", event)
         if event.type == PipelineEventType.STT_START:
             if player_entity_id and (media_id := data.get("stt_start_media")):
                 play_media(hass, player_entity_id, media_id, "audio")

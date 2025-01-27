@@ -7,7 +7,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .core import EVENTS, init_entity
-
+from .simple_state import SimpleState
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -27,10 +27,9 @@ async def async_setup_entry(
         if event == "tts" and not pipeline.tts_engine:
             continue
         entities.append(StreamAssistSensor(config_entry, event))
-
+    simple_state_sensor = SimpleState(hass, config_entry)
+    async_add_entities([simple_state_sensor], update_before_add=True)
     async_add_entities(entities)
-
-
 class StreamAssistSensor(SensorEntity):
     _attr_native_value = STATE_IDLE
 
