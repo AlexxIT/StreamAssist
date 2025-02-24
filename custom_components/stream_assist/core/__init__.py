@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from typing import Callable
+import mimetypes
 
 from homeassistant.components import assist_pipeline
 from homeassistant.components import media_player
@@ -125,7 +126,10 @@ async def assist_run(
 
         if event.type == PipelineEventType.STT_START:
             if player_entity_id and (media_id := data.get("stt_start_media")):
-                play_media(hass, player_entity_id, media_id, "audio")
+                mime_type, _ = mimetypes.guess_type(media_id)
+                if not mime_type:
+                    mime_type = "audio"  # Default to audio if mime type cannot be guessed
+                play_media(hass, player_entity_id, media_id, mime_type)
         elif event.type == PipelineEventType.TTS_END:
             if player_entity_id:
                 tts = event.data["tts_output"]
