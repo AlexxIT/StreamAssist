@@ -16,6 +16,7 @@ from homeassistant.components.assist_pipeline import (
     PipelineRun,
     WakeWordSettings,
 )
+from homeassistant.helpers import chat_session
 from homeassistant.components.camera import Camera
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, Context
@@ -160,7 +161,9 @@ async def assist_run(
         stt_stream=stt_stream,
         intent_input=assist.get("intent_input"),
         tts_input=assist.get("tts_input"),
-        conversation_id=assist.get("conversation_id"),
+        session=chat_session.async_get_chat_session(
+            hass, assist.get("conversation_id")
+        ),
         device_id=assist.get("device_id"),
     )
 
