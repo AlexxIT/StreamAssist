@@ -1,5 +1,7 @@
 import asyncio
 import logging
+from contextlib import nullcontext
+from inspect import signature
 from typing import Callable
 
 from homeassistant.components import assist_pipeline
@@ -29,6 +31,7 @@ _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "stream_assist"
 EVENTS = ["wake", "stt", "intent", "tts"]
+_PIPELINE_USES_SESSION = "session" in signature(PipelineInput).parameters
 
 
 def init_entity(entity: Entity, key: str, config_entry: ConfigEntry) -> str:
@@ -138,48 +141,60 @@ async def assist_run(
         hass,
         context=context,
         pipeline=pipeline,
-        start_stage=assist["start_stage"],  # wake_word, stt, intent, tts
-        end_stage=assist["end_stage"],  # wake_word, stt, intent, tts
+        start_stage=PipelineStage(assist["start_stage"]),  # wake_word, stt, intent, tts
+        end_stage=PipelineStage(assist["end_stage"]),  # wake_word, stt, intent, tts
         event_callback=internal_event_callback,
         tts_audio_output=assist.get("tts_audio_output"),  # None, wav, mp3
         wake_word_settings=new(WakeWordSettings, assist.get("wake_word_settings")),
         audio_settings=new(AudioSettings, assist.get("audio_settings")),
     )
 
-    # 3. Setup Pipeline Input
-    pipeline_input = PipelineInput(
-        run=pipeline_run,
-        stt_metadata=stt.SpeechMetadata(
-            language="",  # set in async_pipeline_from_audio_stream
-            format=stt.AudioFormats.WAV,
-            codec=stt.AudioCodecs.PCM,
-            bit_rate=stt.AudioBitRates.BITRATE_16,
-            sample_rate=stt.AudioSampleRates.SAMPLERATE_16000,
-            channel=stt.AudioChannels.CHANNEL_MONO,
-        ),
-        stt_stream=stt_stream,
-        intent_input=assist.get("intent_input"),
-        tts_input=assist.get("tts_input"),
-        conversation_id=assist.get("conversation_id"),
-        device_id=assist.get("device_id"),
-    )
+    conversation_id = assist.get("conversation_id")
+    if _PIPELINE_USES_SESSION:
+        from homeassistant.helpers import chat_session
 
-    try:
-        # 4. Validate Pipeline
-        await pipeline_input.validate()
+        conversation = chat_session.async_get_chat_session(
+            hass, conversation_id, context=None
+        )
+    else:
+        conversation = nullcontext()
 
-        # 5. Run Stream (optional)
-        if stt_stream:
-            stt_stream.start()
+    with conversation as session:
+        pipeline_input = PipelineInput(
+            run=pipeline_run,
+            stt_metadata=stt.SpeechMetadata(
+                language=pipeline.stt_language or pipeline.language,
+                format=stt.AudioFormats.WAV,
+                codec=stt.AudioCodecs.PCM,
+                bit_rate=stt.AudioBitRates.BITRATE_16,
+                sample_rate=stt.AudioSampleRates.SAMPLERATE_16000,
+                channel=stt.AudioChannels.CHANNEL_MONO,
+            ),
+            stt_stream=stt_stream,
+            intent_input=assist.get("intent_input"),
+            tts_input=assist.get("tts_input"),
+            device_id=assist.get("device_id"),
+            **(
+                {"session": session}
+                if _PIPELINE_USES_SESSION
+                else {"conversation_id": conversation_id}
+            ),
+        )
 
-        # 6. Run Pipeline
-        await pipeline_input.execute()
+        try:
+            await pipeline_input.validate()
 
-    except AttributeError:
-        pass  # 'PipelineRun' object has no attribute 'stt_provider'
-    finally:
-        if stt_stream:
-            stt_stream.stop()
+            if stt_stream:
+                stt_stream.start()
+
+            await pipeline_input.execute()
+        except AttributeError:
+            if _PIPELINE_USES_SESSION:
+                raise
+            # Older Home Assistant may omit stt_provider for non-audio runs.
+        finally:
+            if stt_stream:
+                stt_stream.stop()
 
     return events
 
