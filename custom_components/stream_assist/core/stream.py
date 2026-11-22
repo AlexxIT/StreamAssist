@@ -27,7 +27,8 @@ class Stream:
 
             if file.startswith("rtsp"):
                 kwargs["options"]["rtsp_flags"] = "prefer_tcp"
-                kwargs["options"]["allowed_media_types"] = "audio"
+                # Some cameras only deliver audio when RTSP also sets up video.
+                # run() still decodes only the audio stream.
 
         kwargs.setdefault("timeout", 5)
 
