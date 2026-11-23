@@ -17,8 +17,6 @@ run:
       selector:
         entity:
           domain: camera
-          supported_features:
-            - camera.CameraEntityFeature.STREAM
 
     player_entity_id:
       name: Player Entity
@@ -26,8 +24,6 @@ run:
       selector:
         entity:
           domain: media_player
-          supported_features:
-            - media_player.MediaPlayerEntityFeature.PLAY_MEDIA
 
     stt_start_media:
       name: STT start media

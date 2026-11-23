@@ -39,13 +39,10 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(entry: ConfigEntry):
-        return OptionsFlowHandler(entry)
+        return OptionsFlowHandler()
 
 
 class OptionsFlowHandler(OptionsFlow):
-    def __init__(self, config_entry: ConfigEntry):
-        self.config_entry = config_entry
-
     async def async_step_init(self, user_input: dict = None):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
